@@ -50,7 +50,7 @@
       REAL(KIND=dp) :: dt
       LOGICAL :: TransientSimulation
 
-      TYPE(Variable_t),POINTER :: SMBVAR,HVar
+      TYPE(Variable_t),POINTER :: SMBVar,HVar,BedVar,ZsVar
       INTEGER,POINTER :: Permutation(:)
 
       REAL(KIND=dp) :: Volume
@@ -60,8 +60,8 @@
 
       REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodeArea
       REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: LocalArea
-      REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodalH,MinH
-      REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodalSMB
+      REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodalH,NodalBed,MinH
+      REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodalSMB,NodalZs
       REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: Val,ParVal
       REAL(KIND=dp),ALLOCATABLE,SAVE :: Basis(:), dBasisdx(:,:)
 
@@ -147,11 +147,11 @@
         OPEN(io,file=TRIM(OUTPUT_FName))
       END IF
 
-      write(io,'(ES22.12E3)',advance='no') GetTime()
+      WRITE(io,'(ES22.12E3)',advance='no') GetTime()
       Do i=1,NVal-1
-        write(io,'(ES22.12E3)',advance='no') Val(i)
+        WRITE(io,'(ES22.12E3)',advance='no') Val(i)
       End do
-        write(io,'(ES22.12E3)') Val(NVal)
+        WRITE(io,'(ES22.12E3)') Val(NVal)
       CLOSE(io)
 
       CONTAINS
@@ -161,7 +161,7 @@
       INTEGER :: M
       INTEGER :: N
          IF (.NOT.Firsttime) &
-            DEALLOCATE(NodalH,MinH,NodalSMB,&
+            DEALLOCATE(NodalH,NodalBed,NodalZs,MinH,NodalSMB,&
                       LocalArea, &
                       Basis,dBasisdx,&
                       Val,ParVal,ValueNames,&
@@ -169,8 +169,9 @@
           N=Model % Mesh % NumberOfNodes
           M=Model % MaxElementNodes
           ALLOCATE(Basis(M),&
+                   MinH(M),&
                    dBasisdx(M,3),&
-                   NodalH(M),&
+                   NodalH(M),NodalZs(M),NodalBed(M),&
                    NodalSMB(M),&
                    LocalArea(M),&
                    Val(NVal),ParVal(NVal),ValueNames(NVal),&
@@ -219,6 +220,10 @@
        HVar    => VariableGet(Solver%Mesh%Variables,'Height',UnfoundFatal=.TRUE.)
 
        SMBVar => VariableGet(Solver%Mesh%Variables,'Mass Balance',UnfoundFatal=.TRUE.)
+
+       BedVar => VariableGet(Solver%Mesh%Variables,'BedDEM',UnfoundFatal=.TRUE.)
+
+       ZsVar => VariableGet(Solver%Mesh%Variables,'Zs',UnfoundFatal=.TRUE.)
 
        Permutation => Solver%Variable%Perm
       END SUBROUTINE GET_VARIABLES
@@ -320,13 +325,19 @@
 
          NodalH(1:n) = HVar%Values(HVar%Perm(NodeIndexes(1:n)))
          NodalSMB(1:n) = SMBVar%Values(SMBVar%Perm(NodeIndexes(1:n)))
+         NodalBed(1:n) = BedVar%Values(BedVar%Perm(NodeIndexes(1:n)))
+         NodalZs(1:n) = ZsVar%Values(ZsVar%Perm(NodeIndexes(1:n)))
          
+
          MinH=0._dp
-         MinH(1:n) = ListGetReal(Material,'Min Zs',n,NodeIndexes,UnfoundFatal=.TRUE. )
+         MinH(1:n) = ListGetReal(Material,'Min Zs',n,NodeIndexes,UnfoundFatal=.TRUE.)
+         MinH(1:n) = MinH(1:n) - NodalBed(1:n)
+         
         
         ! CELL IS NOT ACTIVE ALL H VALUES BELOW MinH Value
          IceFree=.FALSE.
          IF (ALL((NodalH(1:n)-MinH(1:n)).LE.Fsmall).AND.ALL(NodalSMB(1:n).LT.0._dp)) IceFree=.TRUE.
+
 
         ! GO TO INTEGRATION
          cellarea=0._dp
@@ -363,11 +374,11 @@
          End DO
          TotalArea = AblaArea + AccuArea
          TotalSMB = AblaSMB + AccuSMB
-         
+
          ! find the front elevation (min z for Not IceFree)
          IF (.NOT.IceFree) THEN
-           IF (ANY(Mesh % Nodes % z(Element % NodeIndexes(1:n))<Hfront)) THEN
-             Hfront = MINVAL(Mesh % Nodes % z(Element % NodeIndexes(1:n)))
+           IF (ANY(NodalZs(1:n)<Hfront)) THEN
+             Hfront = MINVAL(NodalZs(1:n))
            END IF
          END IF
       End do
