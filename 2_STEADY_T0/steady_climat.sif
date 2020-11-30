@@ -73,6 +73,7 @@ Simulation
 
   Output File = "$namerun".result"
   Post File = "$namerun".vtu"
+  vtu:VTU Time Collection = Logical True
 
   Restart File = "../../1_IMPORT_DEM/Mesh2d/argentiereDEM.result"
   Restart Position = 0
