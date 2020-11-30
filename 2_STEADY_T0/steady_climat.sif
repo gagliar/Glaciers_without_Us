@@ -9,7 +9,7 @@
 check keywords warn
 echo on
 
-$namerun = "argentiere_DEM"
+$namerun = "argentiere_T0_"
 
 Header
   Mesh DB "." "Mesh2d"
