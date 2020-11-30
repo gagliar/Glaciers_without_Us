@@ -108,9 +108,9 @@ Initial Condition 1
 End
 
 Initial Condition 2
-  Zs Top= Equals SurfDEM     
+  Zs= Equals SurfDEM     
 
-  Ref Zs Top = Equals SurfDEM       
+  Ref Zs = Equals SurfDEM       
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -124,9 +124,9 @@ Body Force 1
 End
 
 Body Force 2
-  Zs Top Accumulation flux 1 = real 0.0
-  Zs Top Accumulation flux 2 = real 0.0
-  Zs Top Accumulation flux 3 = Equals Mass Balance ! MassBalance is directly returned in m (already converted from m w eq. to m in the mass balance solver)
+  Zs Accumulation flux 1 = real 0.0
+  Zs Accumulation flux 2 = real 0.0
+  Zs Accumulation flux 3 = Equals Mass Balance ! MassBalance is directly returned in m (already converted from m w eq. to m in the mass balance solver)
 End
 
 
@@ -147,10 +147,10 @@ Material 1
   Limit Temperature = Real -10.0
   Relative Temperature = Real 0.0
 
-  Min Zs Top = Variable BedDEM
+  Min Zs = Variable BedDEM
     Real LUA "tx[0]+ MinH"
 
-  Max Zs Top = Variable BedDEM
+  Max Zs = Variable BedDEM
     Real LUA "tx[0]+1000.0"
 End
 
@@ -166,7 +166,7 @@ Solver 1
   Mesh Update Variable = String "dS"
   Mesh Velocity First Zero = Logical True
 
-  Top Surface Variable Name = String "Zs Top"
+  Top Surface Variable Name = String "Zs"
 
   Displacement Mode = Logical False
   Correct Surface = Logical True
@@ -265,17 +265,13 @@ Solver 6
 End
 
 Solver 7
- Equation =  String "Free Surface Evolution"
-  ! the name of the variable
-  Variable = "Zs Top"
+  Equation =  String "Free Surface Evolution"
+  Variable = "Zs"
   Variable DOFs = 1
 
   Procedure = "FreeSurfaceSolver" "FreeSurfaceSolver"
   Before Linsolve = "EliminateDirichlet" "EliminateDirichlet"
 
-  ! this enables the limitation of the free surface
-  ! by upper and/or lower limits (see material section above)
-  ! using a variational inequality formulation
   Apply Dirichlet = Logical true
 
   Linear System Solver = Iterative
@@ -289,52 +285,32 @@ Solver 7
   Nonlinear System Convergence Tolerance = 1.0e-6 
 
   Steady State Convergence Tolerance = 1.0e-4
-  ! switch that off in parallel runs, as it may introduce
-  ! partition dependent relaxation factors:
-  ! Maximum Displacement = Real 10.0
 
   Stabilization Method = Stabilized
   Flow Solution Name = String "Flow Solution"
-  ! this is needed if the variational inequality method
-  Apply Dirichlet = Logical True
-  Exported Variable 1 =  Zs Top Residual
-  Exported Variable 1 DOFS = 1
 
-  ! this variable contains the free surface's initial
-  ! values (set in initial condition above and needed
-  ! for limiting maximum changes as well as in the boundary condition
-  ! at the free surface)
-  Exported Variable 2 = Ref Zs Top
-  Exported Variable 2 DOFS = 1
+  Exported Variable 1 =  -dofs 1 "Zs Residual"
+  Exported Variable 2 = -dofs 1 "Ref Zs"
 End
 
 Solver 8
-  Equation = "ExportVertically3"
-  Procedure = File "ElmerIceSolvers" "ExportVertically"
-  Variable = String "Zs"
-  Variable DOFs = 1
-  Linear System Solver = Iterative
-  Linear System Iterative Method = BiCGStab
-  Linear System Max Iterations  = 500
-  Linear System Preconditioning = ILU1
-  Linear System Convergence Tolerance = 1.0e-06
+  Exec Solver = After Timestep
+  Equation = "Save 1D Vars"
+  Procedure = File "bin/Scalar_OUTPUT" "Scalar_OUTPUT"
+    Variable = -nooutput "savescal"
 
-  Linear System Solver = Direct         
-  !Linear System Direct Method = MUMPS
-
-  Nonlinear System Max Iterations = 1
-  Nonlinear System Convergence Tolerance = 1.0e-06
+  File Name = File "1DVar_OUTPUT_$name$.dat"
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 Equation 1
- Active Solvers(7) = 1 2 3 4 5 6 8
+ Active Solvers(6) = 1 2 3 4 5 6
   Flow Solution Name = String "Flow Solution"
 End
 
 Equation 2
- Active Solvers(1) = 7
+ Active Solvers(2) = 7 8 
    Flow Solution Name = String "Flow Solution"
  Convection = Computed
 End
@@ -375,8 +351,6 @@ End
 Boundary Condition 3
   Name = "upper surface"
   Body Id = 2
-  
-  Zs = Equals Coordinate 3
   
   Depth = Real 0.0
 End
