@@ -69,7 +69,7 @@
       INTEGER :: ierr
       INTEGER,PARAMETER :: NVal=8
       INTEGER, PARAMETER :: io=12
-      INTEGER,PARAMETER :: DIM=2 !dimension of the pb restricted to 2 currently
+      INTEGER,PARAMETER :: DIM=3 !dimension of the pb restricted to 3 currently
 
       INTEGER :: FlowDofs
 
@@ -361,6 +361,8 @@
              AblaArea = AblaArea + SqrtElementMetric*IntegStuff % s(i) 
            END IF
          End DO
+         TotalArea = AblaArea + AccuArea
+         TotalSMB = AblaSMB + AccuSMB
          
          ! find the front elevation (min z for Not IceFree)
          IF (.NOT.IceFree) THEN
