@@ -6,7 +6,7 @@
 #OAR -O INIT_DEM.%jobid%.o
 #OAR -E INIT_DEM.%jobid%.e
 
-#OAR -l nodes=1/core=4,walltime=10:00:00
+#OAR -l nodes=1/core=4,walltime=12:00:00
 #################################
 #
 # Exit on error

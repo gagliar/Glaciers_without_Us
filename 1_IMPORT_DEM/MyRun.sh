@@ -2,10 +2,11 @@
 #################################
 #OAR --name 1_INIT_DEM
 #OAR --project elmerice
-### request ressources: adapt to your needs
-#OAR -l /nodes=1,walltime=00:10:00
-## request only nodes with 32 cores
-#OAR -p n_cores=4 
+
+#OAR -O INIT_DEM.%jobid%.o
+#OAR -E INIT_DEM.%jobid%.e
+
+#OAR -l nodes=1/core=4,walltime=00:10:00
 #################################
 #
 # Exit on error
@@ -30,4 +31,5 @@ ulimit -s unlimited
 export OMP_NUM_THREADS=1
 
 mpirun -np $nbcores ElmerSolver_mpi
+
 

@@ -10,7 +10,7 @@ check keywords warn
 echo on
 
 ! $namerun = "argentiere_T0_"
-$namerun = "test_data_"
+$namerun = "test_T0_Picard"
 
 Header
   Mesh DB "." "Mesh2d"
@@ -65,7 +65,7 @@ Simulation
   Timestepping Method = "bdf"
   BDF Order = 2
 
-  Timestep Intervals(1) = 3 
+  Timestep Intervals(1) = 3000
   Output Intervals(1) = 20
   Timestep Sizes(1) = 0.05
 
@@ -151,8 +151,7 @@ Material 1
   Min Zs = Variable BedDEM
     Real LUA "tx[0]+ MinH"
 
-  Max Zs = Variable BedDEM
-    Real LUA "tx[0]+1000.0"
+  Max Zs = Real 4809.0 
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -210,28 +209,29 @@ Solver 5
   Procedure = "IncompressibleNSVec" "IncompressibleNSSolver"
   Div-Curl Discretization = Logical False
   Stokes Flow = logical true
-!  Stabilization Method = String Stabilized
+  Stabilization Method = String Stabilized
+
+  Linear System Solver = Direct         
+  Linear System Direct Method = mumps
+  mumps percentage increase working space = integer 40
 
   !Non-linear iteration settings:
   !------------------------------ 
   Nonlinear System Max Iterations = 50
-  Nonlinear System Convergence Tolerance  = 1.0e-3
+  Nonlinear System Convergence Tolerance  = 1.0e-4
   Nonlinear System Newton After Iterations = 50
-  Nonlinear System Newton After Tolerance = 1.0e-3
+  Nonlinear System Newton After Tolerance = 1.0e-4
   Nonlinear System Reset Newton = Logical True
-
-  Linear System Solver = Direct         
-  Linear System Direct Method = umfpack
 
   ! Convergence on timelevel (not required here)
   !---------------------------------------------
   Steady State Convergence Tolerance = Real 1.0e-3
 
-  Relative Integration Order = +1
+  Relative Integration Order = -1
   !Number of Integration Points = Integer 44 ! 21, 28, 44, 64, ...
 
   ! 1st iteration viscosity is constant
-  Constant-Viscosity Start = Logical True
+  Constant-Viscosity Start = Logical False
 
 ! Some timing info
 ! ----------------
@@ -335,6 +335,19 @@ Boundary Condition 2
 
   Normal-Tangential Velocity = Logical True  
   Velocity 1 = Real 0.0e0  
+  
+! Slip Coefficient 2 =  Real 0.0474
+! Slip Coefficient 3 =  Real 0.0474
+! Slip Coefficient Exponent = Real #(1.0/3.38-1.0)
+! ! Slip Min Velo = real 0.0
+! 
+! Slip Coefficient Exponent = Variable "Nonlin Iter"
+!   Real
+!     0.  0.0 
+!     1.  0.0 
+!     5. #(1.0/3.38-1.0)
+!     100.  #(1.0/3.38-1.0)
+!   End 
   
   Slip Coefficient 2 =  Variable Coordinate 1
     Real Procedure "ElmerIceUSF" "Sliding_Weertman"

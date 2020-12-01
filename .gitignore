@@ -10,6 +10,10 @@
 *.header
 *.shared
 
+# Excecution output
+*.o
+*.e
+
 # Compiled Object files
 *.slo
 *.lo

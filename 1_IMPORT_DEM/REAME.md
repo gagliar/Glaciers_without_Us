@@ -7,6 +7,6 @@ Then make the Elmer mesh:<br>
 `ElmerGrid 14 2 Mesh2d.msh -autoclean -metis 4 4`<br> 
 
 Execute the simulation:<br>
-`./MyRun.sh`
+`oarsub -S ./MyRun.sh`
 
 Take care that the numper of nodes required is compatible with the number of partitions of the mesh 

@@ -959,11 +959,11 @@ END BLOCK
     INTEGER :: c,i,j,k,l,p,q,t,ngp
     LOGICAL :: NormalTangential, HaveSlip, HaveForce, HavePres, Found, Stat
     REAL(KIND=dp) :: ExtPressure, s, detJ
-    REAL(KIND=dp) :: SlipCoeff(3), SlipExp, SurfaceTraction(3), Normal(3), &
+    REAL(KIND=dp) :: SlipCoeff(3), SlipExp, SlipMinVelo, SurfaceTraction(3), Normal(3), &
         Tangent(3), Tangent2(3), Vect(3), Velo(3)
     TYPE(Nodes_t), SAVE :: Nodes
     TYPE(ValueHandle_t), SAVE :: ExtPressure_h, SurfaceTraction_h, SlipCoeff_h, &
-        SlipExp_h, NormalTangential_h, NormalTangentialVelo_h
+        SlipExp_h, SlipMinVelo_h, NormalTangential_h, NormalTangentialVelo_h
     TYPE(VariableHandle_t), SAVE :: FlowSol_h
     
     SAVE Basis
@@ -979,6 +979,7 @@ END BLOCK
       CALL ListInitElementKeyword( SlipCoeff_h,'Boundary Condition','Slip Coefficient',InitVec3D=.TRUE.)
       
       CALL ListInitElementKeyword( SlipExp_h,'Boundary Condition','Slip Coefficient Exponent')
+      CALL ListInitElementKeyword( SlipMinVelo_h,'Boundary Condition','Slip Min Velocity')
       CALL ListInitElementVariable( FlowSol_h )
           
       CALL ListInitElementKeyword( NormalTangentialVelo_h,'Boundary Condition',&
@@ -1028,11 +1029,17 @@ END BLOCK
       !----------------------------------
       SlipCoeff = ListGetElementReal3D( SlipCoeff_h, Basis, Element, HaveSlip, GaussPoint = t )      
       IF( HaveSlip ) THEN
+        SlipMinVelo = ListGetElementReal( SlipMinVelo_h, Basis, Element, Found )      
+        IF (.Not.Found) SlipMinVelo = 0.0_dp
         SlipExp = ListGetElementReal( SlipExp_h, Basis, Element, Found )      
         IF( Found ) THEN
           Velo = ListGetElementVectorSolution( FlowSol_h, Basis, Element, Found, t, &
               FlowSol_h % dofs - 1) 
-          SlipCoeff = ( SUM( Velo**2 ) )**(SlipExp/2.0) * SlipCoeff
+          IF (SUM(Velo**2)>SlipMinVelo) THEN
+            SlipCoeff = ( SUM( Velo**2 ) )**(SlipExp/2.0) * SlipCoeff
+          ELSE
+            SlipCoeff = ( SlipMinVelo )**(SlipExp/2.0) * SlipCoeff
+          END IF
         END IF
       END IF
             
